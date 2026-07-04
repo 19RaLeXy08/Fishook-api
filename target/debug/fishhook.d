@@ -1,1 +1,1 @@
-/Users/feelwore/source/Fishhook-api/target/debug/fishhook: /Users/feelwore/source/Fishhook-api/src/main.rs
+/Users/feelwore/source/Fishhook-api/target/debug/fishhook: /Users/feelwore/source/Fishhook-api/src/main.rs /Users/feelwore/source/Fishhook-api/src/models.rs /Users/feelwore/source/Fishhook-api/src/state.rs
