@@ -12,8 +12,6 @@ use uuid::Uuid;
 use crate::models::CapturedRequest;
 use crate::state::{AppState, Bucket};
 
-
-
 pub async fn create_bucket(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
     let id = Uuid::new_v4().to_string();
     state.buckets.insert(id.clone(), Bucket::new());
@@ -53,6 +51,17 @@ pub async fn capture(
         let _ = bucket.tx.send(req);
 
         StatusCode::OK
-    }
+}
+
+pub async fn list_requests(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Result<Json<Vec<CapturedRequest>>, StatusCode> {
+    let Some(bucket) = state.buckets.get(&id) else {
+        return Err(StatusCode::NOT_FOUND);
+    };
+    
+    Ok(Json(bucket.requests.clone()))
+}
 
     
