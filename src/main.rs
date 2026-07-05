@@ -5,7 +5,7 @@ mod handlers;
 use std::sync::Arc;
 use axum::{routing::{get, post, any}, Router};
 use state::AppState;
-use handlers::{create_bucket, capture, list_requests};
+use handlers::{create_bucket, capture, list_requests, stream};
 
 #[tokio::main]
 async fn main() {
@@ -16,6 +16,7 @@ async fn main() {
         .route("/bucket", post(create_bucket))
         .route("/hook/{id}", any(capture))
         .route("/bucket/{id}", get(list_requests))
+        .route("/bucket/{id}/ws", get(stream))
         .with_state(state);
 
 

@@ -6,6 +6,9 @@ use axum::{
     http::{HeaderMap, Method, StatusCode, Uri},
     Json,
 };
+use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
+use axum::response::{IntoResponse, Response};
+use tokio::sync::broadcast;
 use chrono::Utc;
 use uuid::Uuid;
 
@@ -63,5 +66,32 @@ pub async fn list_requests(
     
     Ok(Json(bucket.requests.clone()))
 }
+
+pub async fn stream(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    ws: WebSocketUpgrade,
+) -> Response {
+    let Some(bucket) = state.buckets.get(&id) else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    let rx = bucket.tx.subscribe();
+    drop(bucket); 
+
+    ws.on_upgrade(move |socket| handle_socket(socket, rx))
+}
+
+async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<CapturedRequest>) {
+    while let Ok(req) = rx.recv().await {
+        let Ok(json) = serde_json::to_string(&req) else {
+            continue;
+        };
+        if socket.send(Message::Text(json.into())).await.is_err() {
+            break;
+        }
+    }
+} 
+
+
 
     
