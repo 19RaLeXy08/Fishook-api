@@ -6,7 +6,10 @@ mod errors;
 use std::sync::Arc;
 use axum::{routing::{get, post, any}, Router};
 use state::AppState;
-use handlers::{create_bucket, capture, list_requests, stream, list_buckets, get_bucket, delete_bucket, clear_requests};
+use handlers::buckets::{create_bucket, list_buckets, get_bucket, delete_bucket};
+use handlers::requests::{list_requests, clear_requests};
+use handlers::hook::capture;
+use handlers::stream::stream;
 
 #[tokio::main]
 async fn main() {
