@@ -12,6 +12,7 @@ use tokio::sync::broadcast;
 use chrono::Utc;
 use uuid::Uuid;
 
+use crate::errors::AppError;
 use crate::{models::{BucketSummary, CapturedRequest}, state};
 use crate::state::{AppState, Bucket};
 
@@ -31,9 +32,9 @@ pub async fn capture(
     uri: Uri,
     headers: HeaderMap,
     body: String,
-) -> StatusCode {
+) -> Result<StatusCode, AppError> {
     let Some(mut bucket) = state.buckets.get_mut(&id) else {
-        return StatusCode::NOT_FOUND;
+        return Err(AppError::NotFound("bucket".into()));
     };
 
     let headers_map: HashMap<String, String> = headers
@@ -53,15 +54,15 @@ pub async fn capture(
         bucket.requests.push(req.clone());
         let _ = bucket.tx.send(req);
 
-        StatusCode::OK
+        Ok(StatusCode::OK)
 }
 
 pub async fn list_requests(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
-) -> Result<Json<Vec<CapturedRequest>>, StatusCode> {
+) -> Result<Json<Vec<CapturedRequest>>, AppError> {
     let Some(bucket) = state.buckets.get(&id) else {
-        return Err(StatusCode::NOT_FOUND);
+        return Err(AppError::NotFound("bucket".into()));
     };
     
     Ok(Json(bucket.requests.clone()))
@@ -73,7 +74,7 @@ pub async fn stream(
     ws: WebSocketUpgrade,
 ) -> Response {
     let Some(bucket) = state.buckets.get(&id) else {
-        return StatusCode::NOT_FOUND.into_response();
+        return AppError::NotFound("bucket".into()).into_response();
     };
     let rx = bucket.tx.subscribe();
     drop(bucket); 
@@ -109,9 +110,9 @@ pub async fn list_buckets(State(state): State<Arc<AppState>>) -> Json<Vec<Bucket
 pub async fn get_bucket(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
-) -> Result<Json<BucketSummary>, StatusCode> {
+) -> Result<Json<BucketSummary>, AppError> {
     let Some(bucket) = state.buckets.get(&id) else {
-        return Err(StatusCode::NOT_FOUND);
+        return Err(AppError::NotFound("bucket".into()));
     };
     Ok(Json(BucketSummary {
         id: id.clone(),
@@ -123,20 +124,20 @@ pub async fn get_bucket(
 pub async fn delete_bucket(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
-) -> StatusCode {
+) -> Result<StatusCode, AppError> {
     match state.buckets.remove(&id) {
-        Some(_) => StatusCode::NO_CONTENT,
-        None => StatusCode::NOT_FOUND,
+        Some(_) => Ok(StatusCode::NO_CONTENT),
+        None => Err(AppError::NotFound("bucket".into())),
     }
 }
 
 pub async fn clear_requests(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
-) -> StatusCode {
+) -> Result<StatusCode, AppError> {
     let Some(mut bucket) = state.buckets.get_mut(&id) else {
-        return StatusCode::NOT_FOUND;
+        return Err(AppError::NotFound("bucket".into()));
     };
     bucket.requests.clear();
-    StatusCode::NO_CONTENT
+    Ok(StatusCode::NO_CONTENT)
 }

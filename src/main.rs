@@ -1,6 +1,7 @@
 mod models;
 mod state;
 mod handlers;
+mod errors;
 
 use std::sync::Arc;
 use axum::{routing::{get, post, any}, Router};
