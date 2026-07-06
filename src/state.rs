@@ -1,10 +1,12 @@
 use dashmap::DashMap;
 use tokio::sync::broadcast;
 use crate::models::CapturedRequest;
+use chrono::{DateTime, Utc};
 
 pub struct Bucket {
     pub requests: Vec<CapturedRequest>,
     pub tx: broadcast::Sender<CapturedRequest>,
+    pub created_at: DateTime<Utc>,
 }
 
 impl Bucket {
@@ -13,6 +15,7 @@ impl Bucket {
         Self {
             requests: Vec::new(),
             tx,
+            created_at: Utc::now(),
         }
     }
 }

@@ -11,3 +11,10 @@ pub struct CapturedRequest {
     pub body: String,
     pub received_at: DateTime<Utc>,
 }
+
+#[derive(Debug, Clone, Serialize)]
+pub struct BucketSummary {
+    pub id: String,
+    pub request_count: usize,
+    pub created_at: DateTime<Utc>,
+}

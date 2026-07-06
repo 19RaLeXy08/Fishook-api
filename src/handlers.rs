@@ -12,7 +12,7 @@ use tokio::sync::broadcast;
 use chrono::Utc;
 use uuid::Uuid;
 
-use crate::models::CapturedRequest;
+use crate::{models::{BucketSummary, CapturedRequest}, state};
 use crate::state::{AppState, Bucket};
 
 pub async fn create_bucket(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
@@ -93,5 +93,50 @@ async fn handle_socket(mut socket: WebSocket, mut rx: broadcast::Receiver<Captur
 } 
 
 
-
+pub async fn list_buckets(State(state): State<Arc<AppState>>) -> Json<Vec<BucketSummary>>{
+    let buckets = state
+        .buckets
+        .iter()
+        .map(|e| BucketSummary {
+            id: e.key().clone(),
+            request_count: e.requests.len(),
+            created_at: e.value().created_at,
+        })
+        .collect();
+    Json(buckets)
+}
     
+pub async fn get_bucket(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Result<Json<BucketSummary>, StatusCode> {
+    let Some(bucket) = state.buckets.get(&id) else {
+        return Err(StatusCode::NOT_FOUND);
+    };
+    Ok(Json(BucketSummary {
+        id: id.clone(),
+        request_count: bucket.requests.len(),
+        created_at: bucket.created_at,
+    }))
+}
+
+pub async fn delete_bucket(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> StatusCode {
+    match state.buckets.remove(&id) {
+        Some(_) => StatusCode::NO_CONTENT,
+        None => StatusCode::NOT_FOUND,
+    }
+}
+
+pub async fn clear_requests(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> StatusCode {
+    let Some(mut bucket) = state.buckets.get_mut(&id) else {
+        return StatusCode::NOT_FOUND;
+    };
+    bucket.requests.clear();
+    StatusCode::NO_CONTENT
+}

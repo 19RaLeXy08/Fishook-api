@@ -5,18 +5,19 @@ mod handlers;
 use std::sync::Arc;
 use axum::{routing::{get, post, any}, Router};
 use state::AppState;
-use handlers::{create_bucket, capture, list_requests, stream};
+use handlers::{create_bucket, capture, list_requests, stream, list_buckets, get_bucket, delete_bucket, clear_requests};
 
 #[tokio::main]
 async fn main() {
     let state = Arc::new(AppState::default());
 
     let app = Router::new()
-        .route("/", get(|| async { "Fichhook alive"}))
-        .route("/bucket", post(create_bucket))
+        .route("/health", get(|| async { "ok" }))
+        .route("/buckets", post(create_bucket).get(list_buckets))
+        .route("/buckets/{id}", get(get_bucket).delete(delete_bucket))
         .route("/hook/{id}", any(capture))
-        .route("/bucket/{id}", get(list_requests))
-        .route("/bucket/{id}/ws", get(stream))
+        .route("/buckets/{id}/requests", get(list_requests).delete(clear_requests))
+        .route("/buckets/{id}/stream", get(stream))
         .with_state(state);
 
 
