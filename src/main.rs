@@ -7,7 +7,7 @@ use std::sync::Arc;
 use axum::{routing::{get, post, any}, Router};
 use state::AppState;
 use handlers::buckets::{create_bucket, list_buckets, get_bucket, delete_bucket};
-use handlers::requests::{list_requests, clear_requests};
+use handlers::requests::{list_requests, clear_requests, get_request};
 use handlers::hook::capture;
 use handlers::stream::stream;
 
@@ -22,6 +22,7 @@ async fn main() {
         .route("/hook/{id}", any(capture))
         .route("/buckets/{id}/requests", get(list_requests).delete(clear_requests))
         .route("/buckets/{id}/stream", get(stream))
+        .route("/buckets/{id}/requests/{req_id}", get(get_request))
         .with_state(state);
 
 

@@ -27,3 +27,17 @@ pub async fn clear_requests(
     bucket.requests.clear();
     Ok(StatusCode::NO_CONTENT)
 }
+
+pub async fn get_request(
+    State(state): State<Arc<AppState>>,
+    Path((id, req_id)): Path<(String, String)>,
+) -> Result<Json<CapturedRequest>, AppError> {
+    let Some(bucket) = state.buckets.get(&id) else {
+        return Err(AppError::NotFound("bucket".into()));
+    };
+
+    let Some(req) = bucket.requests.iter().find(|r| r.id == req_id) else {
+        return Err(AppError::NotFound("request".into()));
+    };
+    Ok(Json(req.clone()))
+}
